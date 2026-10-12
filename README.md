@@ -12,3 +12,5 @@ __Categorical Attributes__: Computes the fraud rate for each subgroup, then sele
 __Boolean Attributes__: Focuses specifically on the fraud rate associated with the true condition.
 
 __Numeric Attributes__: Automatically bins continuous values into subsets first, calculates subgroup fraud rates, and then selects the median value.
+
+<img width="2130" height="1198" alt="image" src="https://github.com/user-attachments/assets/fb620dfb-ae70-49dc-911f-d57aa52e727e" />
