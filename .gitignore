@@ -1,0 +1,5 @@
+node_modules/
+data_raw/
+.DS_Store
+data_cleaned/
+package-lock.json
