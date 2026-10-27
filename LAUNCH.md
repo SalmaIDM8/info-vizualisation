@@ -40,6 +40,6 @@ Run the data enrichment script to calculate histogram features:
 python scripts/02_data_filtering_hafid.py
 ```
 
-The enriched dataset will be generated at:
-
-`data_processed_hafid/hafid_histogram_data.csv`
+The script will generate **two** processed datasets:
+1. `data_processed_hafid/hafid_enriched_full.csv` (Full dataset with new features)
+2. `data_processed_hafid/hafid_histogram_data.csv` (Lightweight dataset optimized for D3.js)

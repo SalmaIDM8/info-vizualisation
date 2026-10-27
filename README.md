@@ -30,8 +30,9 @@ data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
         v
 [ 02_data_filtering_hafid.py ]
         |
-        v
-data_processed_hafid/hafid_histogram_data.csv
+        +---> data_processed_hafid/hafid_enriched_full.csv (All columns)
+        |
+        +---> data_processed_hafid/hafid_histogram_data.csv (Lightweight for Web)
         |
         v
 [ D3.js Histogram Visualisation ]
