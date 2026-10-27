@@ -56,7 +56,13 @@ df['is_high_risk_amount'] = df['amount_usd'] >= mean_fraud
 
 print("Colonnes ajoutées avec succès : 'amount_category', 'amount_to_mean_ratio', 'is_high_risk_amount'.")
 
+# --- NOUVELLE ÉTAPE : FILTRAGE DES COLONNES ---
+# On ne garde QUE les colonnes nécessaires pour la visualisation de Hiba
+colonnes_a_garder = ['amount_usd', 'is_fraud', 'amount_category', 'amount_to_mean_ratio', 'is_high_risk_amount']
+df = df[colonnes_a_garder]
+print(f"Nettoyage final : Seules les colonnes utiles ont été conservées pour alléger le fichier.")
+
 # 4. Sauvegarde du dataset complet enrichi
 output_filename = os.path.join(output_dir, 'hafid_histogram_data.csv')
 df.to_csv(output_filename, index=False)
-print(f"\nSUCCESS: Dataset complet enrichi sauvegardé dans '{output_filename}'.")
+print(f"\nSUCCESS: Dataset allégé et enrichi sauvegardé dans '{output_filename}'.")
