@@ -2,7 +2,10 @@
 from pathlib import Path
 import pandas as pd
 
-# Project paths
+# ============================================
+# 1. FILE PATHS
+# ============================================
+
 ROOT = Path(__file__).resolve().parent.parent
 
 INPUT_FILE = (
@@ -10,23 +13,75 @@ INPUT_FILE = (
 )
 
 OUTPUT_DIR = ROOT / "data_processed_hiba"
-OUTPUT_FILE = OUTPUT_DIR / "hiba_heatmap_data.csv"
 
+FULL_OUTPUT_FILE = (
+    OUTPUT_DIR / "hiba_heatmap_data.csv"
+)
+
+HEATMAP_ONLY_FILE = (
+    OUTPUT_DIR / "hiba_heatmap_derived_columns.csv"
+)
+
+
+# ============================================
+# 2. HEATMAP DATA PROCESSING
+# ============================================
 
 def add_heatmap_columns(df):
-    # Keep all existing data
+
+    # Preserve all original data
     result = df.copy()
-    original_columns = list(result.columns)
-    original_rows = len(result)
 
-    required = ["amount_usd", "merchant_category", "is_fraud"]
-    missing = [c for c in required if c not in result.columns]
+    original_rows = len(df)
+    original_columns = list(df.columns)
 
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
+    # Check required columns
+    required_columns = [
+        "amount_usd",
+        "merchant_category",
+        "is_fraud"
+    ]
 
-    # Convert values temporarily for calculations
-    amount = pd.to_numeric(result["amount_usd"], errors="coerce")
+    missing_columns = [
+        col for col in required_columns
+        if col not in result.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing required columns: {missing_columns}"
+        )
+
+    # Prevent overwriting existing columns
+    new_columns = [
+        "amount_range",
+        "total_count",
+        "fraud_count",
+        "legitimate_count",
+        "fraud_rate",
+        "average_amount",
+        "min_amount",
+        "max_amount"
+    ]
+
+    existing_columns = [
+        col for col in new_columns
+        if col in result.columns
+    ]
+
+    if existing_columns:
+        raise ValueError(
+            f"Columns already exist: {existing_columns}"
+        )
+
+    # ========================================
+    # 3. CONVERT VALUES FOR CALCULATIONS
+    # ========================================
+
+    amount = pd.to_numeric(
+        result["amount_usd"],
+        errors="coerce"
+    )
 
     fraud = (
         result["is_fraud"]
@@ -43,8 +98,20 @@ def add_heatmap_columns(df):
         })
     )
 
-    # Create amount ranges used by the Heatmap
-    bins = [0, 25, 50, 100, 250, 500, 1000, float("inf")]
+    # ========================================
+    # 4. CREATE AMOUNT RANGES
+    # ========================================
+
+    bins = [
+        0,
+        25,
+        50,
+        100,
+        250,
+        500,
+        1000,
+        float("inf")
+    ]
 
     labels = [
         "$0-25",
@@ -64,18 +131,26 @@ def add_heatmap_columns(df):
         include_lowest=True
     )
 
-    # Temporary values used for calculations
+    # Temporary columns for calculations
     result["_heatmap_amount"] = amount
     result["_heatmap_fraud"] = fraud
 
-    group_columns = ["merchant_category", "amount_range"]
+    # ========================================
+    # 5. CALCULATE HEATMAP STATISTICS
+    # ========================================
 
-    valid = result.dropna(
+    group_columns = [
+        "merchant_category",
+        "amount_range"
+    ]
+
+    valid_data = result.dropna(
         subset=group_columns + ["_heatmap_fraud"]
     )
 
-    stats = (
-        valid.groupby(group_columns, observed=True)
+    statistics = (
+        valid_data
+        .groupby(group_columns, observed=True)
         .agg(
             total_count=("_heatmap_fraud", "size"),
             fraud_count=("_heatmap_fraud", "sum"),
@@ -86,41 +161,96 @@ def add_heatmap_columns(df):
         .reset_index()
     )
 
-    stats["fraud_count"] = stats["fraud_count"].astype(int)
-
-    stats["legitimate_count"] = (
-        stats["total_count"] - stats["fraud_count"]
+    # Fraud count
+    statistics["fraud_count"] = (
+        statistics["fraud_count"].astype(int)
     )
 
-    stats["fraud_rate"] = (
-        stats["fraud_count"] / stats["total_count"] * 100
+    # Legitimate transaction count
+    statistics["legitimate_count"] = (
+        statistics["total_count"]
+        - statistics["fraud_count"]
     )
 
-    # Add calculated columns without removing original columns
+    # Fraud rate percentage
+    statistics["fraud_rate"] = (
+        statistics["fraud_count"]
+        / statistics["total_count"]
+        * 100
+    )
+
+    # ========================================
+    # 6. ADD STATISTICS TO ORIGINAL DATA
+    # ========================================
+
     result = result.merge(
-        stats,
+        statistics,
         on=group_columns,
         how="left",
         validate="many_to_one",
         sort=False
     )
 
-    # Remove only temporary calculation columns
+    # Remove temporary columns only
     result = result.drop(
-        columns=["_heatmap_amount", "_heatmap_fraud"]
+        columns=[
+            "_heatmap_amount",
+            "_heatmap_fraud"
+        ]
     )
 
-    # Check that all original rows and columns remain
+    # Check that no original data was lost
     assert len(result) == original_rows
-    assert all(col in result.columns for col in original_columns)
+
+    assert all(
+        col in result.columns
+        for col in original_columns
+    )
 
     return result
 
 
+# ============================================
+# 7. MAIN FUNCTION
+# ============================================
+
 def main():
+
+    print("Starting Heatmap data processing...")
+
+    # Read Hafid's processed dataset
     df = pd.read_csv(INPUT_FILE)
 
-    new_columns = [
+    print("Input file:", INPUT_FILE)
+    print("Original rows:", len(df))
+    print("Original columns:", len(df.columns))
+
+    # Add Heatmap columns
+    result = add_heatmap_columns(df)
+
+    # Create output directory
+    OUTPUT_DIR.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    # ========================================
+    # 8. SAVE COMPLETE DATASET
+    # ========================================
+
+    result.to_csv(
+        FULL_OUTPUT_FILE,
+        index=False
+    )
+
+    print("\nFull dataset created:")
+    print(FULL_OUTPUT_FILE)
+
+    # ========================================
+    # 9. SAVE ONLY HIBA'S COLUMNS
+    # ========================================
+
+    heatmap_columns = [
         "amount_range",
         "total_count",
         "fraud_count",
@@ -131,26 +261,49 @@ def main():
         "max_amount"
     ]
 
-    # Avoid silently overwriting columns already created by Hafid
-    existing = [c for c in new_columns if c in df.columns]
-    if existing:
-        raise ValueError(
-            f"These columns already exist: {existing}"
-        )
+    # Keep transaction_id to identify transactions
+    if "transaction_id" in result.columns:
+        heatmap_columns = [
+            "transaction_id"
+        ] + heatmap_columns
 
-    result = add_heatmap_columns(df)
+    heatmap_only = result[
+        heatmap_columns
+    ].copy()
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    result.to_csv(OUTPUT_FILE, index=False)
+    heatmap_only.to_csv(
+        HEATMAP_ONLY_FILE,
+        index=False
+    )
 
-    print("Processing completed successfully!")
+    print("\nHeatmap-only dataset created:")
+    print(HEATMAP_ONLY_FILE)
+
+    # ========================================
+    # 10. FINAL VERIFICATION
+    # ========================================
+
+    print("\n===================================")
+    print("PROCESSING COMPLETED SUCCESSFULLY!")
+    print("===================================")
+
     print("Original rows:", len(df))
     print("Processed rows:", len(result))
+
     print("Original columns:", len(df.columns))
     print("Processed columns:", len(result.columns))
-    print("Added columns:", new_columns)
-    print("Output:", OUTPUT_FILE)
 
+    print("\nHeatmap-only columns:")
+    print(heatmap_columns)
+
+    print("\nHeatmap-only rows:", len(heatmap_only))
+
+    print("\nBoth CSV files were saved successfully!")
+
+
+# ============================================
+# 11. RUN SCRIPT
+# ============================================
 
 if __name__ == "__main__":
     main()
