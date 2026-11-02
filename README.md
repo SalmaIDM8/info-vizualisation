@@ -6,27 +6,58 @@ This part of the project prepares the data required for the **Credit Card Fraud 
 
 The Heatmap aims to identify combinations of merchant categories and transaction amount ranges associated with higher fraud rates.
 
-The processing script adds new calculated columns to the dataset already processed by Hafid, while preserving all existing rows and columns.
+The Python processing script extends the dataset previously processed by Hafid by calculating eight additional attributes.
+
+To keep each team member's contribution separate, the script generates two output files:
+
+- A complete enriched dataset containing the original columns and the new Heatmap columns.
+- A separate dataset containing only the Heatmap-derived columns and the transaction identifier.
+
+**Hafid's original dataset and processing scripts are not modified.**
 
 ## 2. Input and Output Files
 
-**Input dataset:**
+### Input Dataset
 
 `data_processed_hafid/hafid_histogram_data.csv`
 
-**Python script:**
+This dataset contains the transactions previously processed by Hafid.
+
+### Python Script
 
 `scripts/03_heatmap_processing_hiba.py`
 
-**Output dataset:**
+This script calculates the attributes required for the Heatmap and exports the results.
+
+### Output Datasets
+
+**1. Complete enriched dataset**
 
 `data_processed_hiba/hiba_heatmap_data.csv`
 
-The original dataset is not overwritten.
+Contains:
+
+- All 25 original columns.
+- The 8 new Heatmap-derived columns.
+- 20,000 transaction rows.
+
+**2. Heatmap-only dataset**
+
+`data_processed_hiba/hiba_heatmap_derived_columns.csv`
+
+Contains:
+
+- `transaction_id` (when available in the input dataset).
+- The 8 Heatmap-derived columns.
+- 20,000 transaction rows.
+
+The `transaction_id` column allows the derived data to be linked back to the original transactions.
+
+Both output files are generated automatically. The original input dataset is preserved.
 
 ## 3. Data Processing
 
-The Python script uses Pandas to create eight derived columns.
+The Python script uses **Pandas** to create eight derived attributes.
 
 | New Column | Description |
 |---|---|
@@ -39,9 +70,9 @@ The Python script uses Pandas to create eight derived columns.
 | `min_amount` | Minimum transaction amount in each group |
 | `max_amount` | Maximum transaction amount in each group |
 
-### Amount Range Transformation
+### 3.1 Amount Range Transformation
 
-The original `amount_usd` attribute is transformed into an ordinal attribute called `amount_range`.
+The original numerical attribute `amount_usd` is transformed into an ordinal categorical attribute called `amount_range`.
 
 The following intervals are used:
 
@@ -53,50 +84,123 @@ The following intervals are used:
 - $500–1000
 - $1000+
 
-### Fraud Rate Calculation
+These ranges correspond to the amount intervals used in the Heatmap visualization.
 
-Transactions are grouped by `merchant_category` and `amount_range`.
+### 3.2 Data Grouping
 
-The fraud rate is calculated using:
+Transactions are grouped using two attributes:
+
+- `merchant_category`
+- `amount_range`
+
+Each group represents a specific merchant category and transaction amount interval.
+
+For each group, the script calculates transaction counts, fraud statistics and amount statistics.
+
+### 3.3 Fraud Rate Calculation
+
+The fraud rate is calculated as:
 
 **fraud_rate = (fraud_count / total_count) × 100**
 
-The calculated group statistics are then added to the corresponding transaction rows.
+For example, if a group contains 100 transactions and 15 are fraudulent:
 
-## 4. Dataset Preservation
+**fraud_rate = (15 / 100) × 100 = 15%**
 
-The script preserves the original transactions and existing columns.
+### 3.4 Amount Statistics
 
-**Processing results:**
+The script also calculates:
 
-| Property | Before | After |
+- `average_amount`: mean transaction amount within the group.
+- `min_amount`: smallest transaction amount within the group.
+- `max_amount`: largest transaction amount within the group.
+
+These values support the detailed analysis of transactions associated with a Heatmap cell.
+
+### 3.5 Exporting Derived Attributes
+
+After the calculations, the script produces two CSV files.
+
+The complete CSV preserves the original attributes and adds the calculated statistics to the corresponding transaction rows.
+
+The separate Heatmap CSV contains only the new attributes, along with `transaction_id` when available.
+
+**The group statistics are repeated for transactions belonging to the same merchant category and amount range.** Therefore, the Heatmap-only CSV is a transaction-level table of derived attributes, not a table containing one row per group.
+
+## 4. Dataset Preservation and Processing Results
+
+The script preserves the original dataset structure and does not remove any transaction rows.
+
+### Complete Enriched Dataset
+
+| Property | Before Processing | After Processing |
 |---|---:|---:|
 | Number of rows | 20,000 | 20,000 |
 | Number of columns | 25 | 33 |
+| New derived columns | 0 | 8 |
 
-A total of **8 new columns** are added without removing any original rows or columns.
+### Heatmap-Only Dataset
+
+| Property | Result |
+|---|---|
+| Number of rows | 20,000 |
+| Number of derived columns | 8 |
+| Transaction identifier | `transaction_id`, if available |
+| Total columns | 9 when `transaction_id` is present |
+
+The processing script therefore allows the team to use either the complete enriched dataset or the separate Heatmap-derived dataset.
 
 ## 5. How to Run
 
-From the root directory of the project, install the required dependency:
+### Step 1 — Install Dependencies
+
+From the root directory of the project, run:
 
 ```bash
 python -m pip install pandas
 ```
 
-Run the processing script:
+### Step 2 — Execute the Processing Script
 
 ```bash
 python scripts/03_heatmap_processing_hiba.py
 ```
 
-The processed CSV file will be generated in:
+### Step 3 — Check the Generated Files
 
-`data_processed_hiba/hiba_heatmap_data.csv`
+After successful execution, the following files are available:
+
+```text
+data_processed_hiba/
+├── hiba_heatmap_data.csv
+└── hiba_heatmap_derived_columns.csv
+```
+
+The script displays a success message and information about the number of rows and columns.
+
+### Expected Execution Results
+
+```text
+PROCESSING COMPLETED SUCCESSFULLY!
+
+Original rows: 20000
+Processed rows: 20000
+
+Original columns: 25
+Processed columns: 33
+
+Heatmap-only rows: 20000
+
+Both CSV files were saved successfully!
+```
 
 ## 6. Heatmap Visualization
 
-The Heatmap uses the following visual mapping:
+The Heatmap is implemented using **D3.js v5**.
+
+It represents fraud rates according to merchant categories and transaction amount ranges.
+
+### Visual Mapping
 
 | Visual Element | Data Attribute |
 |---|---|
@@ -105,26 +209,22 @@ The Heatmap uses the following visual mapping:
 | Cell color | `fraud_rate` |
 | Payment Channel Filter | `channel` |
 
-The color intensity represents the fraud rate, from lower to higher values.
+Each Heatmap cell represents a combination of merchant category and amount range.
 
-The visualization provides two levels:
+The cell color encodes the percentage of fraudulent transactions within that group.
 
-- **Overview:** fraud rates across merchant categories and amount ranges.
-- **Detailed View:** individual transactions and statistics for a selected Heatmap cell.
+### Overview and Detailed View
 
-**Important:** The Python script calculates group statistics using the complete input dataset. When a user applies a filter in the D3.js visualization, the group statistics must be recalculated using the filtered transactions.
+The visualization supports two levels of analysis.
 
-## 7. Technologies
+**Overview**
 
-- Python
-- Pandas
-- CSV
-- D3.js v5 (Heatmap visualization)
+- Compare fraud rates across merchant categories.
+- Identify transaction amount ranges with higher fraud rates.
+- Detect combinations associated with potentially higher fraud risk.
 
-## 8. Contribution
+**Detailed View**
 
-**Contributor:** Hiba Bacha
+When a user selects a Heatmap cell, the visualization provides more detailed information about the corresponding transactions, including:
 
-**Branch:** `hiba/heatmap-processing`
-
-**Contribution:** Creation of the Python data-processing script and addition of derived attributes required for the Heatmap visualization.
+- Total
