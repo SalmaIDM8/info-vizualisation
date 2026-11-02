@@ -1,4 +1,4 @@
-# Credit Card Fraud Analysis Dashboard
+# Analysis in Line Graph and Bar Chart Dashboard -Liu Di
 
 This project includes an interactive D3.js dashboard in [`bar_line.html`](./bar_line.html) for exploring how credit card fraud rates vary across merchant categories and transaction hours.
 
