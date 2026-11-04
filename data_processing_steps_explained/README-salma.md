@@ -72,13 +72,13 @@ visualization needs. The instances are then joined into one big table.
 | Purpose | Path |
 |---|---|
 | Input | `data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv` |
-| Processing script | `scripts/02_scatter_salma.py` |
-| Output | `data_processed/salma/scatter_transactions_v1.csv` |
+| Processing script | `scripts/04_scatter_salma.py` |
+| Output | `data_processed_salma/salma_scatter_data.csv` |
 
 Run it from the project root, after `01_data_cleaning.py`:
 
 ```powershell
-python scripts\02_scatter_salma.py
+python scripts\04_scatter_salma.py
 ```
 
 The script follows VISU Cours 2, slides 61 to 65: reduce the amount of data,
@@ -86,7 +86,7 @@ either by removing or by grouping. It never removes rows, because unusual
 transactions are what the scatter plot looks for, and because a missing row
 would break the join with the other members' tables.
 
-### Output: `scatter_transactions_v1.csv`
+### Output: `salma_scatter_data.csv`
 
 One row per transaction: 20,000 rows and 14 columns. Like every member's
 instance, it is a single CSV. The grouping is stored as columns, so the chart
@@ -153,21 +153,17 @@ The script stops with `CHECK FAILED` if any of these is false:
 - Every transaction falls in a distance band, an amount band and a grid cell.
 - Every grid cell sits inside its parent cell at the level above.
 
-### Proposed rules for the big table
-
-These are a proposal for the team, not yet agreed:
-
-1. Every instance keeps `transaction_id`, and the big table joins on it.
-2. No instance removes rows; add a flag column instead.
-3. True/False columns are written as 0/1.
-4. Original columns keep their names and appear once in the big table.
-   `distance_from_home_km` is shared with the parallel coordinates, and
-   `merchant_category` and `amount_usd` with other members.
-5. Derived columns start with the technique name, like `scatter_`.
-6. Each member writes to `data_processed/<name>/`; the data stays out of git,
-   only the scripts are committed.
+The 7 derived columns are joined into the team table by
+`scripts/05_build_team_dataset.py` (see `README-team.md`).
 
 ## Change log
+
+### v3 - Team conventions
+
+- **Script:** renamed `scripts/02_scatter_salma.py` to `scripts/04_scatter_salma.py`,
+  since 02 and 03 are Hafid's and Hiba's.
+- **Output:** moved to `data_processed_salma/salma_scatter_data.csv`, like the
+  other members' folders, and committed with the other data files.
 
 ### v2 - Scatter plot instance
 

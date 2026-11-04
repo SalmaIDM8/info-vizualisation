@@ -43,3 +43,31 @@ python scripts/02_data_filtering_hafid.py
 The enriched dataset will be generated at:
 
 `data_processed_hafid/hafid_histogram_data.csv`
+
+## Step 3: Heatmap Columns (Hiba)
+
+```bash
+python scripts/03_heatmap_processing_hiba.py
+```
+
+Output: `data_processed_hiba/hiba_heatmap_derived_columns.csv`
+
+## Step 4: Scatter Plot Columns (Salma)
+
+```bash
+python scripts/04_scatter_salma.py
+```
+
+Output: `data_processed_salma/salma_scatter_data.csv`
+
+## Step 5: Build the Team Table
+
+Joins the cleaned data and every member's columns on `transaction_id`:
+
+```bash
+python scripts/05_build_team_dataset.py
+```
+
+Output: `data_team/credit_card_fraud_2026_TEAM_v1.csv` (20,000 rows, 40
+columns) and `data_team/team_columns.csv`, which gives the owner of each
+column. See `data_processing_steps_explained/README-team.md`.

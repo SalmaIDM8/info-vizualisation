@@ -6,8 +6,8 @@ import pandas as pd
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 input_file = os.path.normpath(os.path.join(script_dir, '..', 'data_cleaned', 'credit_card_fraud_2026_CLEANED_v1.csv'))
-output_dir = os.path.normpath(os.path.join(script_dir, '..', 'data_processed', 'salma'))
-output_file = os.path.join(output_dir, 'scatter_transactions_v1.csv')
+output_dir = os.path.normpath(os.path.join(script_dir, '..', 'data_processed_salma'))
+output_file = os.path.join(output_dir, 'salma_scatter_data.csv')
 
 DISTANCE_EDGES = [0, 10, 25, 50, 100, np.inf]
 DISTANCE_LABELS = ['0-10 km', '10-25 km', '25-50 km', '50-100 km', '100+ km']
@@ -86,7 +86,7 @@ for level in GRID_LEVELS[1:]:
     check(((ix // 2) == parent_x).all() and ((iy // 2) == parent_y).all(),
           f"a level {level} cell is not inside its level {level - 1} parent")
 
-transactions.to_csv(output_file, index=False)
+transactions.to_csv(output_file, index=False, lineterminator='\n')
 
 print(f"Output: {len(transactions)} rows, {len(transactions.columns)} columns, {int(transactions['is_fraud'].sum())} fraud")
 for level in GRID_LEVELS:
