@@ -1,19 +1,45 @@
 # Launch Data Processing
 
-From the project root, install the Python dependency:
+From the project root, first set up and activate your virtual environment.
+
+## Step 0: Setup Virtual Environment
+
+**On Mac/Linux:**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**On Windows:**
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m venv venv
+venv\Scripts\activate
 ```
 
-Run the data-processing script:
+Install dependencies:
 
-```powershell
-python scripts\01_data_cleaning.py
+```bash
+pip install -r requirements.txt
 ```
 
-The cleaned file will be generated in:
+## Step 1: Clean Raw Data (Salma)
 
-```text
-data_cleaned\credit_card_fraud_2026_CLEANED_v1.csv
+Run the data-cleaning script:
+
+```bash
+python scripts/01_data_cleaning.py
 ```
+
+## Step 2: Enrich Data with Calculated Columns (Hafid)
+
+Run the data enrichment script to calculate histogram features:
+
+```bash
+python scripts/02_data_filtering_hafid.py
+```
+
+The enriched dataset will be generated at:
+
+`data_processed_hafid/hafid_histogram_data.csv`
