@@ -54,7 +54,6 @@ transactions = pd.DataFrame({
     'scatter_risk_signal_count': flags.sum(axis=1),
     'scatter_risk_signals': flags.apply(lambda row: '|'.join(label for column, label in RISK_FLAGS.items() if row[column]), axis=1),
     'merchant_category': df['merchant_category'],
-    'channel': df['channel'],
     'is_foreign_transaction': to_01(df['is_foreign_transaction']),
 })
 

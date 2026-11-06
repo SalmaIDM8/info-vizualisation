@@ -81,18 +81,13 @@ Run it from the project root, after `01_data_cleaning.py`:
 python scripts\04_scatter_salma.py
 ```
 
-The script follows VISU Cours 2, slides 61 to 65: reduce the amount of data,
-either by removing or by grouping. It never removes rows, because unusual
-transactions are what the scatter plot looks for, and because a missing row
-would break the join with the other members' tables.
-
 ### Output: `salma_scatter_data.csv`
 
-One row per transaction: 20,000 rows and 14 columns. Like every member's
+One row per transaction: 20,000 rows and 13 columns. Like every member's
 instance, it is a single CSV. The grouping is stored as columns, so the chart
 gets each group's count and fraud rate with one group-by on the right column.
 
-8 of the 22 cleaned columns are kept (reduce the number of attributes), and 6
+6 of the 22 cleaned columns are kept (reduce the number of attributes), and 7
 derived columns hold the grouping.
 
 | Column | Kind | Why it is kept |
@@ -103,10 +98,9 @@ derived columns hold the grouping.
 | `is_fraud` | Original, 0/1 | Colour |
 | `scatter_distance_band` | Derived | Distance as 5 ordered bands: 0-10, 10-25, 25-50, 50-100, 100+ km (reduce the range of values) |
 | `scatter_amount_band` | Derived | Amount as 4 ordered bands: <$50, $50-250, $250-1000, $1000+ |
-| `scatter_risk_signal_count` | Derived | How many of the 5 risk flags are true (grouping attributes, slide 65) |
+| `scatter_risk_signal_count` | Derived | How many of the 5 risk flags are true (grouping attributes) |
 | `scatter_risk_signals` | Derived | Names of those flags, separated by `\|`, empty when none |
 | `merchant_category` | Original | Filter |
-| `channel` | Original | Filter |
 | `is_foreign_transaction` | Original, 0/1 | Filter |
 | `scatter_cell_L3` | Derived | Grid cell on an 8 x 8 grid (spatial grouping) |
 | `scatter_cell_L4` | Derived | Grid cell on a 16 x 16 grid |
