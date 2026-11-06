@@ -40,9 +40,9 @@ Run the data enrichment script to calculate histogram features:
 python scripts/02_data_filtering_hafid.py
 ```
 
-The enriched dataset will be generated at:
-
-`data_processed_hafid/hafid_histogram_data.csv`
+The script will generate **two** processed datasets:
+1. `data_processed_hafid/hafid_enriched_full.csv` (Full dataset with new features)
+2. `data_processed_hafid/hafid_histogram_data.csv` (Lightweight dataset optimized for D3.js)
 
 ## Step 3: Heatmap Columns (Hiba)
 
@@ -51,6 +51,12 @@ python scripts/03_heatmap_processing_hiba.py
 ```
 
 Output: `data_processed_hiba/hiba_heatmap_derived_columns.csv`
+
+The script still reads `data_processed_hafid/hafid_histogram_data.csv`, which
+no longer has `merchant_category` or `transaction_id` since Hafid's update, so
+it stops with "Missing required columns". Its input must become
+`data_processed_hafid/hafid_enriched_full.csv`; until then, keep the committed
+output.
 
 ## Step 4: Scatter Plot Columns (Salma)
 
