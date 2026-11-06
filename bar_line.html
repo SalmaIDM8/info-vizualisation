@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Fraud charts</title>
+	<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+	<style>
+		:root {
+			--ink: #333;
+			--muted: #666;
+			--line: #e8e8e8;
+			--coral: #e76f51;
+			--teal: #197278;
+		}
+		* { box-sizing: border-box; }
+		body { margin: 0; padding: 20px; color: var(--ink); background: #fff; font: 12px Arial, sans-serif; }
+		.shell { max-width: 1100px; margin: auto; }
+		.filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-bottom: 12px; }
+		.filter { display: grid; gap: 4px; }
+		.filter label { color: var(--muted); font-size: 11px; }
+		select, .reset { height: 30px; padding: 0 8px; color: var(--ink); background: #fff; border: 1px solid var(--line); font: inherit; }
+		.reset { cursor: pointer; }
+		.grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+		.chart-panel h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+		.chart { width: 100%; min-height: 275px; }
+		.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+		.axis text, .legend text { fill: var(--muted); font: 11px Arial, sans-serif; }
+		.axis path, .axis line { stroke: var(--line); }
+		.axis-title { fill: var(--muted); font: 11px Arial, sans-serif; }
+		.gridline { stroke: #eee9e0; stroke-dasharray: 2 3; }
+		.tooltip { position: fixed; pointer-events: none; opacity: 0; padding: 9px 11px; color: #fff; background: var(--ink); font: 12px Arial, sans-serif; z-index: 3; }
+		@media (max-width: 600px) { body { padding: 12px 6px; } }
+	</style>
+</head>
+<body>
+	<main class="shell" id="dashboard">
+		<section class="filters" aria-label="Filter transactions">
+			<div class="filter"><label for="category-filter">Merchant category</label><select id="category-filter"><option value="all">All categories</option></select></div>
+			<div class="filter"><label for="channel-filter">Channel</label><select id="channel-filter"><option value="all">All channels</option></select></div>
+			<div class="filter"><label for="card-filter">Card type</label><select id="card-filter"><option value="all">All card types</option></select></div>
+			<button class="reset" id="reset-filters" type="button">Reset filters</button>
+		</section>
+		<section class="grid" aria-label="Fraud charts">
+			<section class="chart-panel" aria-labelledby="category-chart-title">
+				<h2 id="category-chart-title">Fraud rate by merchant category</h2>
+				<div id="category-chart" class="chart"></div>
+			</section>
+			<section class="chart-panel" aria-labelledby="hour-chart-title">
+				<h2 id="hour-chart-title">Fraud rate by hour of day</h2>
+				<div id="hour-chart" class="chart"></div>
+			</section>
+		</section>
+	</main>
+	<div class="tooltip"></div>
+	<script>
+		const pct = d3.format(".1%");
+		const tooltip = d3.select(".tooltip");
+		const showTip = (event, text) => tooltip.style("opacity", 1).html(text).style("left", `${event.clientX + 12}px`).style("top", `${event.clientY - 30}px`);
+		const hideTip = () => tooltip.style("opacity", 0);
+		const bool = value => value === "True" || value === "true" || value === "1";
+		const filterFields = [["category-filter", "merchant_category"], ["channel-filter", "channel"], ["card-filter", "card_type"]];
+		let allRows = [];
+
+		d3.csv("./data_processed_hafid/hafid_histogram_data.csv").then(rows => {
+			rows.forEach(d => { d.is_fraud = bool(d.is_fraud); });
+			allRows = rows;
+			filterFields.forEach(([id, field]) => populateFilter(id, rows, field));
+			filterFields.forEach(([id]) => document.getElementById(id).addEventListener("change", updateDashboard));
+			document.getElementById("reset-filters").addEventListener("click", () => {
+				filterFields.forEach(([id]) => { document.getElementById(id).value = "all"; });
+				updateDashboard();
+			});
+			updateDashboard();
+		}).catch(error => {
+			console.error("Could not load the fraud data:", error);
+			d3.select("#dashboard").text("Unable to load the transaction data.");
+		});
+
+		function populateFilter(id, rows, field) {
+			d3.select(`#${id}`)
+				.selectAll("option.value-option")
+				.data(Array.from(new Set(rows.map(d => d[field]))).sort())
+				.join("option")
+				.attr("class", "value-option")
+				.attr("value", d => d)
+				.text(d => d);
+		}
+
+		function updateDashboard() {
+			const rows = allRows.filter(row => filterFields.every(([id, field]) => {
+				const value = document.getElementById(id).value;
+				return value === "all" || row[field] === value;
+			}));
+			renderDashboard(rows);
+		}
+
+		function renderDashboard(rows) {
+			d3.selectAll(".chart").html("");
+			if (!rows.length) {
+				d3.selectAll(".chart").text("No matching transactions.");
+				return;
+			}
+			const categories = Array.from(d3.rollup(rows, group => ({ total: group.length, fraud: d3.sum(group, d => d.is_fraud ? 1 : 0) }), d => d.merchant_category), ([name, value]) => ({ name, ...value, rate: value.fraud / value.total })).sort((a, b) => d3.descending(a.rate, b.rate));
+			drawCategories(categories);
+			const hours = d3.range(24).map(hour => { const group = rows.filter(d => +d.time_of_day_hour === hour); return { hour, total: group.length, fraud: d3.sum(group, d => d.is_fraud ? 1 : 0), rate: group.length ? d3.sum(group, d => d.is_fraud ? 1 : 0) / group.length : 0 }; });
+			drawHours(hours);
+		}
+		function baseSvg(selector, height = 275) { const node = document.querySelector(selector); const width = node.clientWidth; return { svg: d3.select(node).append("svg").attr("viewBox", `0 0 ${width} ${height}`), width, height }; }
+		function drawCategories(data) { const { svg, width, height } = baseSvg("#category-chart", 300); const m = { top: 8, right: 46, bottom: 46, left: 126 }; const x = d3.scaleLinear().domain([0, d3.max(data, d => d.rate)]).nice().range([m.left, width - m.right]); const y = d3.scaleBand().domain(data.map(d => d.name)).range([m.top, height - m.bottom]).padding(.25); svg.append("g").attr("class", "axis").attr("transform", `translate(0,${height - m.bottom})`).call(d3.axisBottom(x).ticks(4).tickFormat(pct)); svg.append("g").attr("class", "axis").attr("transform", `translate(${m.left},0)`).call(d3.axisLeft(y).tickSize(0)); svg.append("text").attr("class", "axis-title").attr("text-anchor", "middle").attr("x", (m.left + width - m.right) / 2).attr("y", height - 4).text("Fraud rate"); svg.append("text").attr("class", "axis-title").attr("text-anchor", "middle").attr("transform", `translate(16,${(m.top + height - m.bottom) / 2}) rotate(-90)`).text("Merchant category"); svg.selectAll(".bar").data(data).join("rect").attr("x", x(0)).attr("y", d => y(d.name)).attr("width", d => x(d.rate) - x(0)).attr("height", y.bandwidth()).attr("fill", (d, i) => i < 3 ? "var(--coral)" : "var(--teal)").on("mousemove", (e, d) => showTip(e, `${d.name}<br><b>${pct(d.rate)}</b> fraud · ${d.fraud} of ${d.total}`)).on("mouseleave", hideTip); svg.selectAll(".value").data(data).join("text").attr("x", d => x(d.rate) + 6).attr("y", d => y(d.name) + y.bandwidth() / 2 + 4).attr("fill", "var(--muted)").style("font", "11px Arial").text(d => pct(d.rate)); }
+		function drawHours(data) { const { svg, width, height } = baseSvg("#hour-chart", 300); const m = { top: 14, right: 12, bottom: 46, left: 48 }; const x = d3.scaleLinear().domain([0, 23]).range([m.left, width - m.right]); const y = d3.scaleLinear().domain([0, d3.max(data, d => d.rate)]).nice().range([height - m.bottom, m.top]); svg.append("g").attr("class", "axis").attr("transform", `translate(0,${height - m.bottom})`).call(d3.axisBottom(x).ticks(8).tickFormat(d => `${d}:00`)); svg.append("g").attr("class", "axis").attr("transform", `translate(${m.left},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(pct)); svg.append("text").attr("class", "axis-title").attr("text-anchor", "middle").attr("x", (m.left + width - m.right) / 2).attr("y", height - 4).text("Hour of day"); svg.append("text").attr("class", "axis-title").attr("text-anchor", "middle").attr("transform", `translate(14,${(m.top + height - m.bottom) / 2}) rotate(-90)`).text("Fraud rate"); svg.append("path").datum(data).attr("fill", "none").attr("stroke", "var(--teal)").attr("stroke-width", 3).attr("d", d3.line().x(d => x(d.hour)).y(d => y(d.rate)).curve(d3.curveCatmullRom)); svg.selectAll("circle").data(data).join("circle").attr("cx", d => x(d.hour)).attr("cy", d => y(d.rate)).attr("r", 4).attr("fill", "var(--coral)").on("mousemove", (e, d) => showTip(e, `${String(d.hour).padStart(2, "0")}:00<br><b>${pct(d.rate)}</b> fraud · ${d.fraud} of ${d.total}`)).on("mouseleave", hideTip); }
+	</script>
+</body>
+</html>
