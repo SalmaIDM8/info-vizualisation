@@ -30,7 +30,7 @@ It stops with `CHECK FAILED` if:
 | Owner | Source file | Columns |
 |---|---|---|
 | Shared (cleaned) | `data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv` | `transaction_id`, `amount_usd`, `merchant_category`, `card_type`, `auth_method`, `channel`, `device_type`, `is_foreign_transaction`, `txn_count_last_24h`, `distance_from_home_km`, `account_balance_usd`, `is_new_merchant`, `used_vpn`, `ip_country_mismatch`, `billing_shipping_mismatch`, `cvv_retry_count`, `velocity_score`, `time_of_day_hour`, `is_ai_generated_scam_attempt`, `merchant_risk_score`, `prior_disputes`, `is_fraud` |
-| Hafid (histogram) | `data_processed_hafid/hafid_histogram_data.csv` | `amount_category`, `amount_to_mean_ratio`, `is_high_risk_amount` |
+| Hafid (histogram) | `data_processed_hafid/hafid_enriched_full.csv` | `amount_category`, `amount_to_mean_ratio`, `is_high_risk_amount` |
 | Hiba (heatmap) | `data_processed_hiba/hiba_heatmap_derived_columns.csv` | `amount_range`, `total_count`, `fraud_count`, `legitimate_count`, `fraud_rate`, `average_amount`, `min_amount`, `max_amount` |
 | Salma (scatter plot) | `data_processed_salma/salma_scatter_data.csv` | `scatter_distance_band`, `scatter_amount_band`, `scatter_risk_signal_count`, `scatter_risk_signals`, `scatter_cell_L3`, `scatter_cell_L4`, `scatter_cell_L5` |
 

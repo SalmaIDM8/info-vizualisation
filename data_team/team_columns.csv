@@ -21,9 +21,9 @@ is_ai_generated_scam_attempt,Shared (cleaned),data_cleaned/credit_card_fraud_202
 merchant_risk_score,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
 prior_disputes,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
 is_fraud,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
-amount_category,Hafid,data_processed_hafid/hafid_histogram_data.csv
-amount_to_mean_ratio,Hafid,data_processed_hafid/hafid_histogram_data.csv
-is_high_risk_amount,Hafid,data_processed_hafid/hafid_histogram_data.csv
+amount_category,Hafid,data_processed_hafid/hafid_enriched_full.csv
+amount_to_mean_ratio,Hafid,data_processed_hafid/hafid_enriched_full.csv
+is_high_risk_amount,Hafid,data_processed_hafid/hafid_enriched_full.csv
 amount_range,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
 total_count,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
 fraud_count,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
