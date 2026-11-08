@@ -16,6 +16,7 @@ Two visualizations are built on top of these outputs: a static histogram in Pyth
 | Full Enriched output | `data_processed_hafid/hafid_enriched_full.csv` |
 | Filtered lightweight output | `data_processed_hafid/hafid_histogram_data.csv` |
 | Processing script | `scripts/02_data_filtering_hafid.py` |
+| Team table (input of both charts) | `data_team/credit_card_fraud_2026_TEAM_v1.csv` |
 | Static chart script | `scripts/03_histogram_preview.py` |
 | Static chart output (generated) | `data_processed_hafid/hafid_histogram_preview.png` |
 | D3.js interactive page | `histogram_d3/index.html` |
@@ -42,9 +43,11 @@ Computes fraud rates by foreign transaction flag and mean amounts for visual ann
 
 ## Visualizations
 
+Both visualizations read the **shared team table** `data_team/credit_card_fraud_2026_TEAM_v1.csv` instead of a personal file. It has 20,000 rows and 40 columns: the 22 cleaned columns, our 3 calculated columns (`amount_category`, `amount_to_mean_ratio`, `is_high_risk_amount`, with the same values as in `hafid_enriched_full.csv`) and the columns added by the other members, which the histogram ignores. Only four columns are used: `amount_usd`, `is_fraud`, `is_foreign_transaction` and `channel`.
+
 Both visualizations answer the same question: **how are transaction amounts distributed, and do fraudulent transactions differ from legitimate ones?** They target the fraud analyst and the data analyst / researcher profiles (spot unusual amounts, compare fraud vs. normal distributions, identify the amount ranges most affected by fraud).
 
-### Key figures (computed on `hafid_enriched_full.csv`)
+### Key figures (computed on the team table)
 
 | **Indicator** | **Value** |
 | --- | --- |
@@ -60,7 +63,7 @@ Two difficulties drive the design of both charts:
 
 ### 1. Static histogram in Python - `scripts/03_histogram_preview.py`
 
-**How to run** (from the project root, virtual environment active, steps 1 and 2 of `LAUNCH.md` done):
+**How to run** (from the project root, virtual environment active, team table present in `data_team/`):
 
 ```bash
 pip install -r requirements.txt
@@ -68,7 +71,7 @@ python scripts/03_histogram_preview.py
 ```
 
 **What it does:**
-- Reads `data_processed_hafid/hafid_enriched_full.csv`.
+- Reads `data_team/credit_card_fraud_2026_TEAM_v1.csv` (only the columns `amount_usd` and `is_fraud`). If the file is missing, it prints an error message and stops.
 - Draws two side-by-side histograms with 40 logarithmic bins from 1 $ to the maximum amount: legitimate transactions in blue, frauds in pink.
   - Left: number of transactions per bin.
   - Right: percentage of each group per bin.
@@ -79,7 +82,7 @@ python scripts/03_histogram_preview.py
 
 ### 2. Interactive histogram in D3.js - `histogram_d3/index.html`
 
-**How to run** (from the project root, steps 1 and 2 of `LAUNCH.md` done):
+**How to run** (from the project root, team table present in `data_team/`):
 
 ```bash
 python -m http.server 8000
@@ -99,7 +102,7 @@ Then open `http://localhost:8000/histogram_d3/` in a browser. A local server is 
 - **Tranches:** slider from 10 to 80 bins (default 40).
 
 **Changing the dataset:**
-- Drop-down list: "Complet" (`hafid_enriched_full.csv`, default) or "Léger" (`hafid_histogram_data.csv`). The light file does not contain `channel` and `is_foreign_transaction`, so the **Lieu** and **Canal** filters are disabled automatically when it is selected.
+- Drop-down list: "Table d’équipe" (`credit_card_fraud_2026_TEAM_v1.csv`, default) or "Léger" (`hafid_histogram_data.csv`). The light file does not contain `channel` and `is_foreign_transaction`, so the **Lieu** and **Canal** filters are disabled automatically when it is selected.
 - "Ou charger un CSV": loads any CSV from the computer. It must contain `amount_usd` and `is_fraud` (`0`/`1` or `True`/`False`); `is_foreign_transaction` (`True`/`False`) and `channel` are optional and enable the matching filters.
 
 **Data handling in the page:** CSV values arrive as text, so the page converts `amount_usd` to a number, `is_fraud` to 0/1, and `is_foreign_transaction` to a boolean while loading. Amounts are then grouped into bins with `d3.bin()` and drawn with D3 scales.

@@ -5,10 +5,15 @@ import matplotlib.pyplot as plt
 
 # Chemins relatifs à la racine du projet
 root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-csv_file = os.path.join(root, 'data_processed_hafid', 'hafid_enriched_full.csv')
+csv_file = os.path.join(root, 'data_team', 'credit_card_fraud_2026_TEAM_v1.csv')  # shared team table
 png_file = os.path.join(root, 'data_processed_hafid', 'hafid_histogram_preview.png')
 
-df = pd.read_csv(csv_file)
+if not os.path.exists(csv_file):
+    print(f"ERROR: Cannot find {csv_file}. The team table must be in the 'data_team' folder.")
+    exit()
+
+# Only the columns needed for the histogram are read
+df = pd.read_csv(csv_file, usecols=['amount_usd', 'is_fraud'])
 normal = df[df['is_fraud'] == 0]['amount_usd']
 fraud = df[df['is_fraud'] == 1]['amount_usd']
 

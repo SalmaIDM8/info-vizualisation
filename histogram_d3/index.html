@@ -36,7 +36,7 @@ svg{display:block;width:100%;height:auto}svg text{fill:var(--mut);font-size:11px
 <section class="ctl">
   <label>Jeu de données
     <select id="ds">
-      <option value="../data_processed_hafid/hafid_enriched_full.csv">Complet (avec canal et étranger)</option>
+      <option value="../data_team/credit_card_fraud_2026_TEAM_v1.csv">Table d’équipe (complète)</option>
       <option value="../data_processed_hafid/hafid_histogram_data.csv">Léger (5 colonnes)</option>
     </select></label>
   <label>Ou charger un CSV<input type="file" id="file" accept=".csv"></label>
@@ -57,6 +57,7 @@ svg{display:block;width:100%;height:auto}svg text{fill:var(--mut);font-size:11px
 const $=id=>document.getElementById(id);
 const FR=d3.formatLocale({decimal:",",thousands:"\u00a0",grouping:[3],currency:["","\u00a0$"]});
 const fi=FR.format(",d"),f1=FR.format(",.1f"),money=v=>FR.format(",.0f")(v)+"\u00a0$";
+const s=n=>n>1?"s":"";
 const S={rows:[],fg:"all",ch:"all",sc:"log",md:"pct",nb:40,range:null};
 
 /* 1. Chargement et conversion des types (le CSV arrive en texte) */
@@ -112,7 +113,7 @@ function render(){
   if(!S.rows.length)return;
   const d=filtered(),log=S.sc==="log",mx=d3.max(S.rows,r=>r.a),mn=Math.max(.01,d3.min(S.rows,r=>r.a));
   const dom=log?[mn,mx]:[0,1000],fr=d3.sum(d,r=>r.f);
-  $("kpi").innerHTML=`<b>${fi(d.length)}</b> transactions affichées, dont <b style="color:var(--f)">${fi(fr)}</b> fraudes (<b>${f1(100*fr/(d.length||1))}\u00a0%</b>)`;
+  $("kpi").innerHTML=`<b>${fi(d.length)}</b> transaction${s(d.length)} affichée${s(d.length)}, dont <b style="color:var(--f)">${fi(fr)}</b> fraude${s(fr)} (<b>${f1(100*fr/(d.length||1))}\u00a0%</b>)`;
   $("note").textContent=log?"Échelle logarithmique : chaque graduation multiplie le montant, ce qui laisse voir les montants extrêmes."
     :`${fi(d.filter(r=>r.a>1000).length)} transactions au-dessus de 1 000 $ ne sont pas dessinées.`;
   hist($("ov"),d,{dom,log,nb:S.nb,pct:S.md==="pct",h:340,click:b=>{S.range=[b.x0,b.x1];detail();$("detail").scrollIntoView({behavior:"smooth"})}});
@@ -124,7 +125,7 @@ function detail(){
   const av=a=>a.length?money(d3.mean(a,r=>r.a)):"–",md=a=>a.length?money(d3.median(a,r=>r.a)):"–";
   const rate=100*fr.length/(d.length||1),glob=100*d3.sum(all,r=>r.f)/(all.length||1);
   $("dtxt").innerHTML=`<h2>Détail : de ${money(x0)} à ${money(x1)}<button id="back">Revenir à la vue d’ensemble</button></h2>
-    <p><b>${fi(d.length)}</b> transactions, dont <b>${fi(fr.length)}</b> fraudes : taux de <b>${f1(rate)}\u00a0%</b> dans cette tranche, contre ${f1(glob)}\u00a0% sur l’ensemble affiché.</p>
+    <p><b>${fi(d.length)}</b> transaction${s(d.length)}, dont <b>${fi(fr.length)}</b> fraude${s(fr.length)} : taux de <b>${f1(rate)}\u00a0%</b> dans cette tranche, contre ${f1(glob)}\u00a0% sur l’ensemble affiché.</p>
     <p>Montant moyen : normales ${av(no)}, fraudes ${av(fr)}. Médiane : normales ${md(no)}, fraudes ${md(fr)}.</p>`;
   $("back").onclick=()=>{S.range=null;detail()};
   $("dch").style.display="block";

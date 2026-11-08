@@ -32,10 +32,15 @@ data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
         |
         +---> data_processed_hafid/hafid_enriched_full.csv (All columns)
         |           |
-        |           +---> [ 03_histogram_preview.py ] ---> data_processed_hafid/hafid_histogram_preview.png
-        |           |                                      (static chart, Python / matplotlib)
-        |           |
-        |           +---> [ histogram_d3/index.html ]  (D3.js interactive histogram, default dataset)
+        |           +---> merged with every member's columns into the team table
+        |                       |
+        |                       v
+        |           data_team/credit_card_fraud_2026_TEAM_v1.csv (20,000 rows, 40 columns)
+        |                       |
+        |                       +---> [ 03_histogram_preview.py ] ---> data_processed_hafid/hafid_histogram_preview.png
+        |                       |                                      (static chart, Python / matplotlib)
+        |                       |
+        |                       +---> [ histogram_d3/index.html ]  (D3.js interactive histogram, default dataset)
         |
         +---> data_processed_hafid/hafid_histogram_data.csv (Lightweight for Web)
                     |
@@ -51,6 +56,7 @@ info-vizualisation/
 ├── data_raw/                        Raw Kaggle CSV
 ├── data_cleaned/                    Output of 01_data_cleaning.py
 ├── data_processed_hafid/            Outputs of 02 and 03 (CSV files + generated PNG)
+├── data_team/                       Shared team table (every member's columns)
 ├── scripts/
 │   ├── 01_data_cleaning.py          Cleaning (Salma)
 │   ├── 02_data_filtering_hafid.py   Feature engineering (Hafid)
@@ -72,7 +78,7 @@ info-vizualisation/
 | Static histogram (Python) | `scripts/03_histogram_preview.py` | Amount distribution of fraudulent vs. legitimate transactions, in two views (counts and % of each group). Saved as a PNG image. |
 | Interactive histogram (D3.js) | `histogram_d3/index.html` | Same distribution in the browser, with an overview, a detail view per amount range, filters, and the ability to switch or load another dataset. |
 
-Details of both visualizations (features, encodings, required columns) are in `data_processing_steps_explained/README-hafid.md`.
+Both read the shared team table `data_team/credit_card_fraud_2026_TEAM_v1.csv`. Details of both visualizations (features, encodings, required columns) are in `data_processing_steps_explained/README-hafid.md`.
 
 ---
 
@@ -89,7 +95,7 @@ To run the data processing pipeline and the visualizations locally, please refer
    pip install -r requirements.txt
    ```
 
-3. Execute the data scripts in order by following `LAUNCH.md` (steps 1 and 2 prepare the data).
+3. Execute the data scripts in order by following `LAUNCH.md` (steps 1 and 2 prepare the data). The charts read the shared team table in `data_team/`, which must be present in the project.
 4. Generate the Python chart (step 3 of `LAUNCH.md`):
 
    ```bash

@@ -46,7 +46,7 @@ The script will generate **two** processed datasets:
 
 ## Step 3: Generate the Python Histogram (Hafid)
 
-Steps 0 to 2 must be done first (the script reads `data_processed_hafid/hafid_enriched_full.csv`). With the virtual environment active, run from the project root:
+Step 0 must be done first, and the shared team table `data_team/credit_card_fraud_2026_TEAM_v1.csv` must be in the project (it is committed in the repository). With the virtual environment active, run from the project root:
 
 ```bash
 python scripts/03_histogram_preview.py
@@ -60,7 +60,7 @@ If no window can open (remote machine, WSL without display), the PNG is still sa
 
 ## Step 4: Launch the D3.js Interactive Histogram (Hafid)
 
-Steps 0 to 2 must be done first (the page reads the CSV files from `data_processed_hafid/`).
+The shared team table `data_team/credit_card_fraud_2026_TEAM_v1.csv` must be in the project (the page loads it by default). The "Léger" option reads `data_processed_hafid/hafid_histogram_data.csv`, which needs step 2.
 
 **1. Start a local web server from the project root** (the virtual environment is not required for this step, it only uses Python's built-in server):
 
@@ -79,7 +79,7 @@ http://localhost:8000/histogram_d3/
 **3. Stop the server** with `Ctrl + C` in the terminal when you are done.
 
 Notes:
-- Do **not** double-click `histogram_d3/index.html`: browsers block reading local CSV files this way, and the page will show an error message. If you do open it that way, use the "Ou charger un CSV" button and select `data_processed_hafid/hafid_enriched_full.csv` manually.
+- Do **not** double-click `histogram_d3/index.html`: browsers block reading local CSV files this way, and the page will show an error message. If you do open it that way, use the "Ou charger un CSV" button and select `data_team/credit_card_fraud_2026_TEAM_v1.csv` manually.
 - An internet connection is needed: the D3.js library is loaded from a CDN (`cdnjs.cloudflare.com`).
 - If port 8000 is already used, pick another one (e.g. `python -m http.server 8080`) and change the port in the URL.
 
@@ -88,7 +88,7 @@ Notes:
 | **Problem** | **Cause / Fix** |
 | --- | --- |
 | `ModuleNotFoundError: No module named 'matplotlib'` | The virtual environment is not active, or dependencies are not installed. Activate `venv` and run `pip install -r requirements.txt`. |
-| `FileNotFoundError` on `hafid_enriched_full.csv` | Steps 1 and 2 were not run. Run `01_data_cleaning.py` then `02_data_filtering_hafid.py`. |
+| `ERROR: Cannot find ... credit_card_fraud_2026_TEAM_v1.csv` | The team table is missing from `data_team/`. Get it from the repository (it is committed on the team branch), or rebuild it with the team script after steps 1 and 2. |
 | D3 page shows "Impossible de lire le CSV" | The page was opened by double-click, or the server was not started from the project root. Restart `python -m http.server 8000` from the root and use the `localhost` URL. |
 | D3 page is blank | No internet connection (D3.js cannot be loaded from the CDN). |
-| "Lieu" and "Canal" filters are greyed out | The "Léger" dataset is selected: it does not contain `is_foreign_transaction` and `channel`. Select "Complet". |
+| "Lieu" and "Canal" filters are greyed out | The "Léger" dataset is selected: it does not contain `is_foreign_transaction` and `channel`. Select "Table d’équipe". |
