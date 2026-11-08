@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Credit Card Fraud Analysis</title>
+
+    <script src="lib/d3.v5.min.js"></script>
+    <link rel="stylesheet" href="heatmap.css">
+</head>
+
+<body>
+
+    <div class="page">
+
+        <h1>Credit Card Fraud Analysis</h1>
+
+        <p class="subtitle">
+            Factor identification using merchant categories and transaction amounts
+        </p>
+
+        <div class="controls">
+            <div class="filter-group">
+                <label for="channelFilter">
+                    Payment channel:
+                </label>
+                <select id="channelFilter">
+                    <option value="All">All channels</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="merchantFilter">Merchant category:</label>
+                <select id="merchantFilter">
+                    <option value="All">All categories</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="amountFilter">Amount range:</label>
+                <select id="amountFilter">
+                    <option value="All">All ranges</option>
+                </select>
+            </div>
+
+            <label class="dataset-upload" for="datasetFile">Open CSV</label>
+            <input id="datasetFile" type="file" accept=".csv,text/csv">
+
+            <button id="backButton">
+                ← Back to Overview
+            </button>
+        </div>
+
+        <div id="activeFilter">
+            Showing transactions from all payment channels
+        </div>
+
+        <div id="dataStatus" role="status" aria-live="polite"></div>
+
+        <div id="zoomInfo"></div>
+
+        <div class="visualization-container">
+            <div id="heatmap"></div>
+
+            <aside id="detailPanel" aria-live="polite">
+                <h2>Selected slice</h2>
+                <p id="selectionPrompt">Select a heatmap cell to inspect its transactions.</p>
+                <div id="selectionDetails" hidden>
+                    <h3 id="selectedLabel"></h3>
+                    <dl class="detail-stats">
+                        <div><dt>Total transactions</dt><dd id="selectedTotal"></dd></div>
+                        <div><dt>Fraudulent</dt><dd id="selectedFraud"></dd></div>
+                        <div><dt>Legitimate</dt><dd id="selectedLegitimate"></dd></div>
+                        <div><dt>Fraud rate</dt><dd id="selectedRate"></dd></div>
+                        <div><dt>Average amount</dt><dd id="selectedAverage"></dd></div>
+                        <div><dt>Median amount</dt><dd id="selectedMedian"></dd></div>
+                        <div><dt>Maximum amount</dt><dd id="selectedMaximum"></dd></div>
+                    </dl>
+                    <button id="openDetail" type="button">Open detailed view</button>
+                </div>
+            </aside>
+
+            <div class="legend-container">
+                <div class="legend-title">
+                    Fraud Rate (%)
+                </div>
+                <div id="legend"></div>
+                <div class="legend-labels"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="heatmap.js"></script>
+
+</body>
+
+</html>
