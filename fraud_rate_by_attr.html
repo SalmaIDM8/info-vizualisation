@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Fraud rate by attribute</title>
+	<style>
+		* { box-sizing: border-box; }
+		body { margin: 0; padding: 20px; background: #fff; color: #333; font: 12px Arial, sans-serif; }
+		#chart { max-width: 1100px; margin: 0 auto; overflow-x: auto; }
+		svg { display: block; width: 100%; height: auto; }
+		@media (max-width: 600px) { body { padding: 12px 6px; } }
+	</style>
+	<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+	<div id="chart"></div>
+	<script>
+		const root = d3.select("#chart");
+		const excluded = new Set(["is_fraud", "transaction_id"]);
+		const typeColors = { Boolean: "#4E79A7", Numeric: "#F28E2B", Categorical: "#59A14F" };
+		const isFraud = value => ["1", "true", "yes"].includes(String(value).toLowerCase());
+		const formatNumber = value => Number.isInteger(value) ? String(value) : Number(value.toFixed(2)).toString();
+
+		d3.csv("./credit_card_fraud_2026.csv").then(rows => {
+			if (!rows.length || !rows.columns.includes("is_fraud")) {
+				throw new Error("The CSV is empty or does not contain is_fraud.");
+			}
+			const fields = rows.columns.filter(field => !excluded.has(field));
+			const baseRate = d3.mean(rows, row => isFraud(row.is_fraud) ? 1 : 0) * 100;
+			const data = fields.map(field => {
+				const values = rows.map(row => row[field] || "(Missing)");
+				const distinct = new Set(values).size;
+				const numeric = values.every(value => value === "(Missing)" || Number.isFinite(Number(value)));
+				const boolean = values.every(value => ["true", "false"].includes(value.toLowerCase()));
+				const type = boolean ? "Boolean" : numeric ? "Numeric" : "Categorical";
+				const groups = numeric && distinct > 20
+					? numericGroups(rows, values)
+					: categoricalGroups(rows, values);
+				if (!groups.length) throw new Error(`Could not calculate a fraud rate for ${field}.`);
+				return { field, type, rate: d3.median(groups, group => group.rate), subgroupCount: groups.length };
+			}).sort((a, b) => d3.descending(a.rate, b.rate));
+			drawChart(data, baseRate);
+		}).catch(error => {
+			console.error("Could not load or calculate fraud rates from credit_card_fraud_2026.csv:", error);
+			root.text("Unable to load credit_card_fraud_2026.csv.");
+		});
+
+		function categoricalGroups(rows, values) {
+			const groups = d3.rollup(
+				rows,
+				group => ({
+					total: group.length,
+					fraud: d3.sum(group, row => isFraud(row.is_fraud) ? 1 : 0)
+				}),
+				(row, index) => values[index]
+			);
+			return Array.from(groups, ([name, counts]) => ({
+				name,
+				total: counts.total,
+				fraud: counts.fraud,
+				rate: counts.fraud / counts.total * 100
+			}));
+		}
+
+		function numericGroups(rows, values) {
+			const numbers = values.map(value => value === "(Missing)" ? null : Number(value));
+			const sorted = numbers.filter(value => value !== null).sort(d3.ascending);
+			const cuts = [];
+			for (let i = 1; i < 10; i += 1) {
+				const cut = sorted[Math.floor(i * sorted.length / 10)];
+				if (cut > sorted[0] && cut < sorted[sorted.length - 1] && cuts[cuts.length - 1] !== cut) cuts.push(cut);
+			}
+			const bins = Array.from({ length: cuts.length + 1 }, (_, index) => ({
+				name: `bin-${index}`,
+				values: [],
+				total: 0,
+				fraud: 0
+			}));
+			rows.forEach((row, index) => {
+				const value = numbers[index];
+				if (value === null) return;
+				let bin = 0;
+				while (bin < cuts.length && value >= cuts[bin]) bin += 1;
+				bins[bin].values.push(value);
+				bins[bin].total += 1;
+				if (isFraud(row.is_fraud)) bins[bin].fraud += 1;
+			});
+			return bins.filter(bin => bin.total).map(bin => ({
+				name: `${formatNumber(d3.min(bin.values))}–${formatNumber(d3.max(bin.values))}`,
+				total: bin.total,
+				fraud: bin.fraud,
+				rate: bin.fraud / bin.total * 100
+			}));
+		}
+
+		function drawChart(data, baseRate) {
+			const width = Math.max(root.node().clientWidth, 520);
+			const margin = { top: 72, right: 60, bottom: 12, left: 205 };
+			const rowHeight = 27;
+			const height = margin.top + margin.bottom + data.length * rowHeight;
+			const maxRate = Math.max(18, d3.max(data, d => d.rate) * 1.08);
+			const x = d3.scaleLinear().domain([0, maxRate]).range([margin.left, width - margin.right]);
+			const y = d3.scaleBand().domain(data.map(d => d.field)).range([margin.top, height - margin.bottom]).padding(0.17);
+			const svg = root.append("svg")
+				.attr("viewBox", `0 0 ${width} ${height}`)
+				.attr("role", "img")
+				.attr("aria-label", `Fraud rate bar chart for ${data.length} attributes`);
+
+			svg.append("text")
+				.attr("x", margin.left)
+				.attr("y", 20)
+				.attr("fill", "#333")
+				.attr("font-size", 16)
+				.attr("font-weight", 600)
+				.text("Fraud rate by attribute");
+
+			const legend = svg.append("g").attr("transform", `translate(${margin.left + 260},20)`);
+			Object.entries(typeColors).forEach(([type, color], index) => {
+				const item = legend.append("g").attr("transform", `translate(${index * 112},0)`);
+				item.append("rect")
+					.attr("width", 10)
+					.attr("height", 10)
+					.attr("y", -9)
+					.attr("fill", color);
+				item.append("text")
+					.attr("x", 15)
+					.attr("fill", "#555")
+					.attr("font-size", 11)
+					.text(type);
+			});
+
+			svg.append("text")
+				.attr("x", x(baseRate) + 5)
+				.attr("y", 43)
+				.attr("fill", "#222")
+				.attr("font-size", 11)
+				.attr("paint-order", "stroke")
+				.attr("stroke", "#fff")
+				.attr("stroke-width", 3)
+				.text(`Base rate (${baseRate.toFixed(2)}%)`);
+
+			svg.append("g")
+				.attr("transform", `translate(0,${margin.top - 8})`)
+				.call(d3.axisTop(x).ticks(4).tickFormat(d => `${d}%`).tickSize(-(height - margin.top - margin.bottom)))
+				.call(axis => axis.select(".domain").remove())
+				.call(axis => axis.selectAll(".tick line").attr("stroke", "#e8e8e8"))
+				.call(axis => axis.selectAll(".tick text").attr("fill", "#666").attr("font-size", 11));
+
+			svg.append("line")
+				.attr("x1", x(baseRate))
+				.attr("x2", x(baseRate))
+				.attr("y1", margin.top - 12)
+				.attr("y2", height - margin.bottom)
+				.attr("stroke", "#222")
+				.attr("stroke-dasharray", "4 3");
+
+			svg.append("g")
+				.selectAll("text")
+				.data(data, d => d.field)
+				.join("text")
+				.attr("x", margin.left - 8)
+				.attr("y", d => y(d.field) + y.bandwidth() / 2)
+				.attr("dy", "0.35em")
+				.attr("text-anchor", "end")
+				.attr("fill", "#333")
+				.text(d => d.field);
+
+			svg.append("g")
+				.selectAll("rect")
+				.data(data, d => d.field)
+				.join("rect")
+				.attr("x", x(0))
+				.attr("y", d => y(d.field))
+				.attr("width", d => x(d.rate) - x(0))
+				.attr("height", y.bandwidth())
+				.attr("fill", d => typeColors[d.type])
+				.append("title")
+				.text(d => `${d.field} (${d.type}): ${d.rate.toFixed(2)}% median across ${d.subgroupCount} subsets`);
+
+			svg.append("g")
+				.selectAll("text")
+				.data(data, d => d.field)
+				.join("text")
+				.attr("x", d => Math.min(x(d.rate) + 5, width - 42))
+				.attr("y", d => y(d.field) + y.bandwidth() / 2)
+				.attr("dy", "0.35em")
+				.attr("fill", "#333")
+				.attr("font-size", 11)
+				.text(d => `${d.rate.toFixed(2)}%`);
+		}
+	</script>
+</body>
+</html>

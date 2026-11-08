@@ -1,0 +1,41 @@
+column,owner,source
+transaction_id,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+amount_usd,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+merchant_category,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+card_type,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+auth_method,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+channel,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+device_type,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+is_foreign_transaction,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+txn_count_last_24h,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+distance_from_home_km,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+account_balance_usd,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+is_new_merchant,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+used_vpn,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+ip_country_mismatch,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+billing_shipping_mismatch,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+cvv_retry_count,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+velocity_score,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+time_of_day_hour,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+is_ai_generated_scam_attempt,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+merchant_risk_score,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+prior_disputes,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+is_fraud,Shared (cleaned),data_cleaned/credit_card_fraud_2026_CLEANED_v1.csv
+amount_category,Hafid,data_processed_hafid/hafid_enriched_full.csv
+amount_to_mean_ratio,Hafid,data_processed_hafid/hafid_enriched_full.csv
+is_high_risk_amount,Hafid,data_processed_hafid/hafid_enriched_full.csv
+amount_range,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+total_count,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+fraud_count,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+legitimate_count,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+fraud_rate,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+average_amount,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+min_amount,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+max_amount,Hiba,data_processed_hiba/hiba_heatmap_derived_columns.csv
+scatter_distance_band,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_amount_band,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_risk_signal_count,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_risk_signals,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_cell_L3,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_cell_L4,Salma,data_processed_salma/salma_scatter_data.csv
+scatter_cell_L5,Salma,data_processed_salma/salma_scatter_data.csv
