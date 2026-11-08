@@ -39,7 +39,6 @@ svg{display:block;width:100%;height:auto}svg text{fill:var(--mut);font-size:11px
       <option value="../data_team/credit_card_fraud_2026_TEAM_v1.csv">Table d’équipe (complète)</option>
       <option value="../data_processed_hafid/hafid_histogram_data.csv">Léger (5 colonnes)</option>
     </select></label>
-  <label>Ou charger un CSV<input type="file" id="file" accept=".csv"></label>
   <label>Lieu<select id="fg"><option value="all">Tous</option><option value="yes">Étranger</option><option value="no">National</option></select></label>
   <label>Canal<select id="ch"><option value="all">Tous</option></select></label>
   <label>Échelle<select id="sc"><option value="log">Logarithmique (tout voir)</option><option value="lin">Linéaire (0 à 1 000 $)</option></select></label>
@@ -75,7 +74,7 @@ async function loadPath(p){
     const t=window.EMBEDDED?window.EMBEDDED:await (await fetch(p)).text();
     setRows(d3.csvParse(t));
   }catch(e){
-    $("err").textContent="Impossible de lire le CSV. Lance « python -m http.server » à la racine du projet puis ouvre http://localhost:8000/histogram_d3/ ou utilise « Ou charger un CSV ».";
+    $("err").textContent="Impossible de lire le CSV. Lance « python -m http.server » à la racine du projet puis ouvre http://localhost:8000/histogram_d3/.";
   }
 }
 
@@ -136,7 +135,6 @@ function detail(){
 ["fg","ch","sc","md"].forEach(id=>$(id).onchange=e=>{S[id]=e.target.value;render()});
 $("nb").oninput=e=>{S.nb=+e.target.value;$("nbo").textContent=S.nb;render()};
 $("ds").onchange=e=>loadPath(e.target.value);
-$("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>setRows(d3.csvParse(t)))};
 let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,150)});
 loadPath($("ds").value);
 </script>
