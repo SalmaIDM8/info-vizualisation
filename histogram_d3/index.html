@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Histogramme des montants – Fraude carte bancaire</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14202b;--mut:#5b6b7a;--line:#d9dee4;--n:#2f6f9f;--f:#d1345b;color-scheme:light;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161d;--panel:#18212b;--ink:#e8edf2;--mut:#9aabba;--line:#2b3846;--n:#5aa3d6;--f:#ff6b8f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10161d;--panel:#18212b;--ink:#e8edf2;--mut:#9aabba;--line:#2b3846;--n:#5aa3d6;--f:#ff6b8f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:0 0 6px}
+.sub,.hint{color:var(--mut);margin:0 0 12px}.hint{font-size:.85rem;margin:6px 0 0}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 16px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+.ctl label{display:flex;flex-direction:column;font-size:.8rem;color:var(--mut);gap:3px}
+select,input,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+button{cursor:pointer;margin-left:8px;font-size:.8rem}
+.leg{display:flex;gap:16px;font-size:.85rem;margin:4px 0}.leg i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;overflow-x:auto}
+svg{display:block;width:100%;height:auto}svg text{fill:var(--mut);font-size:11px}svg .domain,svg .tick line{stroke:var(--line)}
+.n{fill:var(--n);fill-opacity:.6}.f{fill:var(--f);fill-opacity:.7}
+.hit{fill:transparent}.hit:hover{fill:var(--ink);fill-opacity:.08}.clk .hit{cursor:pointer}
+#detail{margin-top:22px}#err{color:var(--f);margin:0 0 10px}
+#tip{position:fixed;display:none;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 9px;border-radius:6px;font-size:.8rem;z-index:9;max-width:190px}
+</style>
+</head>
+<body>
+<main>
+<h1>Montants des transactions : fraudes et achats normaux</h1>
+<p class="sub">Chaque barre compte les transactions d’une tranche de montant. Survole une barre pour les chiffres, clique pour zoomer.</p>
+<p id="err" role="alert"></p>
+<section class="ctl">
+  <label>Jeu de données
+    <select id="ds">
+      <option value="../data_processed_hafid/hafid_enriched_full.csv">Complet (avec canal et étranger)</option>
+      <option value="../data_processed_hafid/hafid_histogram_data.csv">Léger (5 colonnes)</option>
+    </select></label>
+  <label>Ou charger un CSV<input type="file" id="file" accept=".csv"></label>
+  <label>Lieu<select id="fg"><option value="all">Tous</option><option value="yes">Étranger</option><option value="no">National</option></select></label>
+  <label>Canal<select id="ch"><option value="all">Tous</option></select></label>
+  <label>Échelle<select id="sc"><option value="log">Logarithmique (tout voir)</option><option value="lin">Linéaire (0 à 1 000 $)</option></select></label>
+  <label>Affichage<select id="md"><option value="pct">% de chaque groupe</option><option value="n">Nombre</option></select></label>
+  <label>Tranches : <output id="nbo">40</output><input type="range" id="nb" min="10" max="80" value="40"></label>
+</section>
+<p id="kpi"></p>
+<div class="leg"><span><i style="background:var(--n)"></i>Achats normaux</span><span><i style="background:var(--f)"></i>Fraudes</span></div>
+<div id="ov" class="chart clk"></div>
+<p class="hint" id="note"></p>
+<section id="detail"><div id="dtxt"></div><div id="dch" class="chart"></div></section>
+</main>
+<div id="tip"></div>
+<script>
+const $=id=>document.getElementById(id);
+const FR=d3.formatLocale({decimal:",",thousands:"\u00a0",grouping:[3],currency:["","\u00a0$"]});
+const fi=FR.format(",d"),f1=FR.format(",.1f"),money=v=>FR.format(",.0f")(v)+"\u00a0$";
+const S={rows:[],fg:"all",ch:"all",sc:"log",md:"pct",nb:40,range:null};
+
+/* 1. Chargement et conversion des types (le CSV arrive en texte) */
+const parse=d=>({a:+d.amount_usd,f:(d.is_fraud==="1"||d.is_fraud==="True")?1:0,
+  fg:d.is_foreign_transaction==null?null:d.is_foreign_transaction==="True",ch:d.channel==null?null:d.channel});
+function setRows(raw){
+  S.rows=raw.map(parse).filter(r=>isFinite(r.a));S.range=null;S.fg="all";S.ch="all";
+  const chs=[...new Set(S.rows.map(r=>r.ch))].filter(Boolean).sort();
+  $("ch").innerHTML='<option value="all">Tous</option>'+chs.map(c=>`<option>${c}</option>`).join("");
+  $("fg").value="all";$("fg").disabled=!S.rows.length||S.rows[0].fg===null;$("ch").disabled=!chs.length;
+  $("err").textContent="";render();
+}
+async function loadPath(p){
+  try{
+    const t=window.EMBEDDED?window.EMBEDDED:await (await fetch(p)).text();
+    setRows(d3.csvParse(t));
+  }catch(e){
+    $("err").textContent="Impossible de lire le CSV. Lance « python -m http.server » à la racine du projet puis ouvre http://localhost:8000/histogram_d3/ ou utilise « Ou charger un CSV ».";
+  }
+}
+
+/* 2. Histogramme réutilisable (vue d’ensemble ET détail) */
+const tip=$("tip"),hide=()=>tip.style.display="none";
+function show(e,h){tip.innerHTML=h;tip.style.display="block";tip.style.left=Math.min(e.clientX+14,innerWidth-200)+"px";tip.style.top=(e.clientY+14)+"px"}
+function hist(el,data,o){
+  const W=900,H=o.h,m={t:10,r:14,b:40,l:56},[lo,hi]=o.dom;
+  el.innerHTML="";
+  const svg=d3.select(el).append("svg").attr("viewBox",[0,0,W,H]).attr("role","img").attr("aria-label","Histogramme des montants");
+  const x=(o.log?d3.scaleLog():d3.scaleLinear()).domain([lo,hi]).range([m.l,W-m.r]);
+  const th=d3.range(1,o.nb).map(i=>o.log?lo*Math.pow(hi/lo,i/o.nb):lo+(hi-lo)*i/o.nb);
+  const bin=d3.bin().value(r=>r.a).domain([lo,hi]).thresholds(th);
+  const bn=bin(data.filter(r=>!r.f)),bf=bin(data.filter(r=>r.f));
+  const tn=d3.sum(bn,b=>b.length)||1,tf=d3.sum(bf,b=>b.length)||1;
+  const val=(b,t)=>o.pct?100*b.length/t:b.length;
+  const y=d3.scaleLinear().domain([0,d3.max([...bn.map(b=>val(b,tn)),...bf.map(b=>val(b,tf))])||1]).nice().range([H-m.b,m.t]);
+  svg.append("g").attr("transform",`translate(0,${H-m.b})`).call(o.log?d3.axisBottom(x).ticks(8,"~s"):d3.axisBottom(x).ticks(8));
+  svg.append("g").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5));
+  svg.append("text").attr("x",W/2).attr("y",H-6).attr("text-anchor","middle").text("Montant de la transaction (USD)");
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-H/2).attr("y",14).attr("text-anchor","middle").text(o.pct?"% de chaque groupe":"Nombre de transactions");
+  const bars=(bins,t,c)=>svg.append("g").selectAll("rect").data(bins).join("rect").attr("class",c)
+    .attr("x",b=>x(b.x0)+.5).attr("width",b=>Math.max(0,x(b.x1)-x(b.x0)-1))
+    .attr("y",b=>y(val(b,t))).attr("height",b=>y(0)-y(val(b,t)));
+  bars(bn,tn,"n");bars(bf,tf,"f");
+  svg.append("g").selectAll("rect").data(bn.map((b,i)=>({x0:b.x0,x1:b.x1,n:b.length,f:bf[i].length}))).join("rect").attr("class","hit")
+    .attr("x",b=>x(b.x0)).attr("width",b=>Math.max(0,x(b.x1)-x(b.x0))).attr("y",m.t).attr("height",H-m.b-m.t)
+    .on("mousemove",(e,b)=>show(e,`<b>${money(b.x0)} à ${money(b.x1)}</b><br>Normales : ${fi(b.n)}<br>Fraudes : ${fi(b.f)}<br>Taux de fraude : ${f1(100*b.f/((b.n+b.f)||1))}\u00a0%`))
+    .on("mouseleave",hide).on("click",(e,b)=>{hide();o.click&&o.click(b)});
+}
+
+/* 3. Vue d’ensemble + détail */
+const filtered=()=>S.rows.filter(r=>(S.fg==="all"||r.fg===(S.fg==="yes"))&&(S.ch==="all"||r.ch===S.ch));
+function render(){
+  if(!S.rows.length)return;
+  const d=filtered(),log=S.sc==="log",mx=d3.max(S.rows,r=>r.a),mn=Math.max(.01,d3.min(S.rows,r=>r.a));
+  const dom=log?[mn,mx]:[0,1000],fr=d3.sum(d,r=>r.f);
+  $("kpi").innerHTML=`<b>${fi(d.length)}</b> transactions affichées, dont <b style="color:var(--f)">${fi(fr)}</b> fraudes (<b>${f1(100*fr/(d.length||1))}\u00a0%</b>)`;
+  $("note").textContent=log?"Échelle logarithmique : chaque graduation multiplie le montant, ce qui laisse voir les montants extrêmes."
+    :`${fi(d.filter(r=>r.a>1000).length)} transactions au-dessus de 1 000 $ ne sont pas dessinées.`;
+  hist($("ov"),d,{dom,log,nb:S.nb,pct:S.md==="pct",h:340,click:b=>{S.range=[b.x0,b.x1];detail();$("detail").scrollIntoView({behavior:"smooth"})}});
+  detail();
+}
+function detail(){
+  if(!S.range){$("dtxt").innerHTML='<p class="hint">Clique sur une barre pour voir le détail de sa tranche de montants.</p>';$("dch").style.display="none";return}
+  const [x0,x1]=S.range,all=filtered(),d=all.filter(r=>r.a>=x0&&r.a<=x1),fr=d.filter(r=>r.f),no=d.filter(r=>!r.f);
+  const av=a=>a.length?money(d3.mean(a,r=>r.a)):"–",md=a=>a.length?money(d3.median(a,r=>r.a)):"–";
+  const rate=100*fr.length/(d.length||1),glob=100*d3.sum(all,r=>r.f)/(all.length||1);
+  $("dtxt").innerHTML=`<h2>Détail : de ${money(x0)} à ${money(x1)}<button id="back">Revenir à la vue d’ensemble</button></h2>
+    <p><b>${fi(d.length)}</b> transactions, dont <b>${fi(fr.length)}</b> fraudes : taux de <b>${f1(rate)}\u00a0%</b> dans cette tranche, contre ${f1(glob)}\u00a0% sur l’ensemble affiché.</p>
+    <p>Montant moyen : normales ${av(no)}, fraudes ${av(fr)}. Médiane : normales ${md(no)}, fraudes ${md(fr)}.</p>`;
+  $("back").onclick=()=>{S.range=null;detail()};
+  $("dch").style.display="block";
+  hist($("dch"),d,{dom:[x0,x1],log:false,nb:20,pct:false,h:260});
+}
+
+/* 4. Contrôles */
+["fg","ch","sc","md"].forEach(id=>$(id).onchange=e=>{S[id]=e.target.value;render()});
+$("nb").oninput=e=>{S.nb=+e.target.value;$("nbo").textContent=S.nb;render()};
+$("ds").onchange=e=>loadPath(e.target.value);
+$("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>setRows(d3.csvParse(t)))};
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,150)});
+loadPath($("ds").value);
+</script>
+</body>
+</html>
