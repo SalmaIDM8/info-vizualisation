@@ -77,3 +77,10 @@ python scripts/05_build_team_dataset.py
 Output: `data_team/credit_card_fraud_2026_TEAM_v1.csv` (20,000 rows, 40
 columns) and `data_team/team_columns.csv`, which gives the owner of each
 column. See `data_processing_steps_explained/README-team.md`.
+
+## Gathered Visualizations
+
+The visualizations built from these datasets are collected in
+[MOURTAD/fraud-visualization](https://github.com/MOURTAD/fraud-visualization)
+and deployed at
+[fraud-visualization.vercel.app](https://fraud-visualization.vercel.app).

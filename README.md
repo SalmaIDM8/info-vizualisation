@@ -1,4 +1,16 @@
-# Analysis in Line Graph and Bar Chart Dashboard -Liu Di
+# Credit Card Fraud Visualization
+
+This repository holds the data processing and each member's visualization
+work. The finished visualizations are gathered in a separate repository:
+
+- Repository: [MOURTAD/fraud-visualization](https://github.com/MOURTAD/fraud-visualization)
+- Live site: [fraud-visualization.vercel.app](https://fraud-visualization.vercel.app)
+
+Each member has a folder under `visualizations/` there (`abdelhafid`, `di`,
+`hiba`, `salma`). For example, the scatter plot is at
+[fraud-visualization.vercel.app/visualizations/salma/scatter.html](https://fraud-visualization.vercel.app/visualizations/salma/scatter.html).
+
+## Analysis in Line Graph and Bar Chart Dashboard -Liu Di
 
 This project includes an interactive D3.js dashboard in [`bar_line.html`](./bar_line.html) for exploring how credit card fraud rates vary across merchant categories and transaction hours.
 
